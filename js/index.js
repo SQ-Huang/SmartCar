@@ -30,7 +30,7 @@ $(function () {
         //////////////////////////////////////////////////////////////////
         //设置指令槽的位置和大小
         //////////////////////////////////////////////////////////////////
-        $('.right div').each(function () {
+        $('.groove').each(function () {
             var left = parseFloat($(this).css('left')) - 459;       //459和262偏移量参考psd设计文件
             var top = parseFloat($(this).css('top')) - 262;
             var width = parseFloat($(this).css('width'));
@@ -46,6 +46,7 @@ $(function () {
             $(this).css('height', height + 'px');
             $(this).css('background-size', '100% 100%');
             $(this).css('z-index', 1);
+            $(this).css('opacity', 0);
         });
 
         //////////////////////////////////////////////////////////////////
@@ -53,7 +54,7 @@ $(function () {
         //////////////////////////////////////////////////////////////////
         blockDockStatus = [];
         $('.blocks img').each(function () {
-            $(this).css('z-index', 2);      //设置z-index
+            $(this).css('z-index', 5);      //设置z-index
 
             var index = $(this).attr('id').split('-')[1];
             index = parseInt(index);
@@ -61,43 +62,6 @@ $(function () {
         });
 
         resize();
-
-        /*
-        //////////////////////////////////////////////////////////////////
-        //设置可移动指令块的起始位置和停靠状态（false未在控制面板停靠，1已停靠在控制面板）
-        //////////////////////////////////////////////////////////////////
-        blockDockStatus = [];
-        blockInitPos = [];
-        $('.blocks img').each(function () {
-            var id = $(this).attr('id').split('-')[1];
-            var left = $('#td-'+id).offset().left;
-            $(this).css('left', left);
-            var top = $('#td-'+id).offset().top;
-            $(this).css('top', top);
-            $(this).css('z-index', 2);
-
-            //设置指令停靠状态
-            var index = parseInt(id);
-            blockDockStatus[index] = -1;
-
-            //保存指令停靠位置
-            blockInitPos[index] = {};
-            blockInitPos[index].x = left;
-            blockInitPos[index].y = top;
-        });
-
-        //////////////////////////////////////////////////////////////////
-        //记录指令槽的位置（相对文档左上角的坐标）
-        //////////////////////////////////////////////////////////////////
-        groovePos = [];
-        $('.right div').each(function () {
-            var index = $(this).attr('id').split('-')[1];
-            index = parseInt(index);
-            groovePos[index] = {};
-            groovePos[index].x = $('#groove-'+index).offset().left;
-            groovePos[index].y = $('#groove-'+index).offset().top;
-        });
-        */
     };
 
     /**
@@ -122,12 +86,16 @@ $(function () {
         //记录指令槽的位置（相对文档左上角的坐标），即指令块的停靠位置
         //////////////////////////////////////////////////////////////////
         groovePos = [];
-        $('.right div').each(function () {
+        $('.groove').each(function () {
             var index = $(this).attr('id').split('-')[1];
             index = parseInt(index);
             groovePos[index] = {};
             groovePos[index].x = $(this).offset().left;
             groovePos[index].y = $(this).offset().top;
+
+            //修正指令槽大小和指令块大小不一样导致的偏移
+            groovePos[index].x += (parseFloat($(this).css('width')) - parseFloat($('#img-0').css('width')))/2;
+            groovePos[index].y += (parseFloat($(this).css('height')) - parseFloat($('#img-0').css('height')))/2;
         });
 
         //////////////////////////////////////////////////////////////////
@@ -215,9 +183,9 @@ $(function () {
         }
 
         var id = '#img-' + selectIndex;
-        var left = e.clientX - position.x + document.body.scrollLeft;
+        var left = e.pageX - position.x;
         $(id).css('left', left+'px');
-        var top = e.clientY - position.y + document.body.scrollTop;
+        var top = e.pageY - position.y;
         $(id).css('top', top+'px');
     }).mouseup(function (e) {
         if (selectIndex >= 0) {
@@ -225,8 +193,17 @@ $(function () {
                 destPos = blockInitPos[selectIndex];
                 var id = 'img-'+ selectIndex;
                 move(id, destPos, 5);
+            } else {
+                destPos = groovePos[blockDockStatus[selectIndex]];
+                var id = 'img-'+ selectIndex;
+                move(id, destPos, 5);
+
+                $('#groove-'+blockDockStatus[selectIndex]).css('opacity', 0);
             }
         }
+
+        //修改指令槽的z-index，使其处于指令块的下面
+        $('.groove').css('z-index', 1);
 
         selectIndex = -1;
         position.x = 0;
@@ -239,8 +216,42 @@ $(function () {
         selectIndex = parseInt(id.split('-')[1]);
         position.x = e.offsetX;
         position.y = e.offsetY;
-
         console.log(position.x+','+position.y);
+
+        //修改指令槽的z-index，使其处于指令块的上面，使得指令槽可以相应鼠标事件
+        $('.groove').css('z-index', 10);
+
+        if (blockDockStatus[selectIndex] >= 0) {
+            $('#groove-'+blockDockStatus[selectIndex]).css('opacity', 1);
+        }
+
         e.preventDefault();
+    });
+
+    $('.groove').mouseenter(function () {
+        if (selectIndex >= 0) {
+            var index = $(this).attr('id').split('-')[1];
+            index = parseInt(index);
+
+            //确保指令槽没有被指令块停靠
+            for (var i = 0; i < blockDockStatus.length; i++) {
+                if (blockDockStatus[i] === index) {
+                    return;
+                }
+            }
+
+            //设置指令块停靠位置索引
+            blockDockStatus[selectIndex] = index;
+            console.log('dockindex = '+index);
+            $(this).css('opacity', 1);
+        }
+    }).mouseout(function () {
+        if (selectIndex >= 0) {
+            //取消指令块的停靠
+            var index = $(this).attr('id').split('-')[1];
+            index = parseInt(index);
+            blockDockStatus[selectIndex] = -1;
+            $(this).css('opacity', 0);
+        }
     });
 });
