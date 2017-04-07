@@ -1,2 +1,0 @@
-# SmartCar
-author: sqhuang
