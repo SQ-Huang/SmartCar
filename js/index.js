@@ -240,6 +240,11 @@ $(function () {
                 }
             }
 
+            //功能指令块不能放置在指令槽12-15处
+            if ( (selectIndex > 11) && (index > 11) ) {
+                return;
+            }
+
             //设置指令块停靠位置索引
             blockDockStatus[selectIndex] = index;
             console.log('dockindex = '+index);

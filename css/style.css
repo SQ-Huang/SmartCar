@@ -3,7 +3,7 @@ body {
     margin: 0;
 }
 .layout {
-    width:auto;
+    min-width: 1440px;
     display:inline-block !important;
     margin: 30px auto;
 }
